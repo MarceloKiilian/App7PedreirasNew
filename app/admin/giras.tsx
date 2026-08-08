@@ -1,29 +1,64 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { Calendar, FileText, Plus, Trash2, ArrowLeft } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { db } from '../../constants/firebaseConfig';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { Colors } from "../../constants/Colors";
+import {
+  Calendar,
+  FileText,
+  Plus,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { db } from "../../constants/firebaseConfig";
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore";
 
 export default function GerenciarGiras() {
   const router = useRouter();
-  const [descricao, setDescricao] = useState('');
-  const [data, setData] = useState('');
+  const [descricao, setDescricao] = useState("");
+  const [data, setData] = useState("");
   const [giras, setGiras] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "giras"), orderBy("data", "asc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const docs: any[] = [];
-      querySnapshot.forEach((doc) => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
-      setGiras(docs);
-      setFetching(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const docs: any[] = [];
+        querySnapshot.forEach((doc) => {
+          docs.push({ id: doc.id, ...doc.data() });
+        });
+        setGiras(docs);
+        setErrorMessage(null);
+        setFetching(false);
+      },
+      (error) => {
+        console.warn("Erro ao carregar giras:", error);
+        setErrorMessage(
+          "Sem permissão para acessar as giras. Verifique as regras do Firestore.",
+        );
+        setFetching(false);
+      },
+    );
     return () => unsubscribe();
   }, []);
 
@@ -45,10 +80,10 @@ export default function GerenciarGiras() {
       await addDoc(collection(db, "giras"), {
         descricao,
         data,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
-      setDescricao('');
-      setData('');
+      setDescricao("");
+      setData("");
       Alert.alert("Sucesso", "Gira cadastrada com sucesso!");
     } catch (error) {
       Alert.alert("Erro", "Não foi possível salvar a gira.");
@@ -58,30 +93,29 @@ export default function GerenciarGiras() {
   };
 
   const handleDelete = (id: string) => {
-    Alert.alert(
-      "Confirmar Exclusão",
-      "Deseja realmente remover esta gira?",
-      [
-        { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Excluir", 
-          style: "destructive", 
-          onPress: async () => {
-            try {
-              await deleteDoc(doc(db, "giras", id));
-            } catch (error) {
-              Alert.alert("Erro", "Não foi possível excluir a gira.");
-            }
+    Alert.alert("Confirmar Exclusão", "Deseja realmente remover esta gira?", [
+      { text: "Cancelar", style: "cancel" },
+      {
+        text: "Excluir",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await deleteDoc(doc(db, "giras", id));
+          } catch (error) {
+            Alert.alert("Erro", "Não foi possível excluir a gira.");
           }
-        }
-      ]
-    );
+        },
+      },
+    ]);
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <ArrowLeft color={Colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Gerenciar Giras</Text>
@@ -89,7 +123,12 @@ export default function GerenciarGiras() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.card, { borderTopWidth: 4, borderTopColor: Colors.green }]}>
+        <View
+          style={[
+            styles.card,
+            { borderTopWidth: 4, borderTopColor: Colors.green },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <Calendar color={Colors.primary} size={24} />
             <Text style={styles.cardTitle}>Nova Gira</Text>
@@ -117,8 +156,14 @@ export default function GerenciarGiras() {
             />
           </View>
 
-          <TouchableOpacity style={styles.addButton} onPress={handleAddGira} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddGira}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
               <>
                 <Plus color={Colors.white} size={20} />
                 <Text style={styles.addButtonText}>Cadastrar Gira</Text>
@@ -128,28 +173,47 @@ export default function GerenciarGiras() {
         </View>
 
         <Text style={styles.sectionTitle}>Calendário de Giras</Text>
-        
+
         {fetching ? (
-          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 20 }} />
+          <ActivityIndicator
+            color={Colors.primary}
+            size="large"
+            style={{ marginTop: 20 }}
+          />
+        ) : errorMessage ? (
+          <Text style={styles.emptyText}>{errorMessage}</Text>
         ) : (
           giras.map((item) => (
-            <View key={item.id} style={[styles.itemCard, { borderLeftWidth: 4, borderLeftColor: Colors.green }]}>
+            <View
+              key={item.id}
+              style={[
+                styles.itemCard,
+                { borderLeftWidth: 4, borderLeftColor: Colors.green },
+              ]}
+            >
               <View style={styles.itemInfo}>
                 <Text style={styles.itemDesc}>{item.descricao}</Text>
                 <View style={styles.dateRow}>
                   <Calendar color={Colors.primary} size={14} />
-                  <Text style={styles.itemData}>{item.data.split('-').reverse().join('/')}</Text>
+                  <Text style={styles.itemData}>
+                    {item.data.split("-").reverse().join("/")}
+                  </Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
+              <TouchableOpacity
+                onPress={() => handleDelete(item.id)}
+                style={styles.deleteButton}
+              >
                 <Trash2 color="#ff4444" size={20} />
               </TouchableOpacity>
             </View>
           ))
         )}
 
-        {!fetching && giras.length === 0 && (
-          <Text style={styles.emptyText}>Nenhuma gira cadastrada no momento.</Text>
+        {!fetching && !errorMessage && giras.length === 0 && (
+          <Text style={styles.emptyText}>
+            Nenhuma gira cadastrada no momento.
+          </Text>
         )}
       </ScrollView>
     </View>
@@ -159,23 +223,23 @@ export default function GerenciarGiras() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
   },
   header: {
     backgroundColor: Colors.primary,
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
   headerTitle: {
     color: Colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   backButton: {
     padding: 5,
@@ -194,31 +258,31 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.primary,
     marginLeft: 10,
   },
   label: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     paddingHorizontal: 12,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: "#eee",
     height: 50,
   },
   inputIcon: {
@@ -231,9 +295,9 @@ const styles = StyleSheet.create({
   },
   addButton: {
     backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 18,
     borderRadius: 12,
     elevation: 2,
@@ -242,12 +306,12 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 10,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.textDark,
     marginBottom: 15,
   },
@@ -256,8 +320,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
     elevation: 2,
@@ -267,26 +331,26 @@ const styles = StyleSheet.create({
   },
   itemDesc: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.textDark,
   },
   dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
   },
   itemData: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginLeft: 5,
   },
   deleteButton: {
     padding: 10,
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#999',
+    textAlign: "center",
+    color: "#999",
     marginTop: 20,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });

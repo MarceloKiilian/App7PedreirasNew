@@ -1,36 +1,76 @@
-import React, { useState, useEffect } from 'react';
-import { StyleSheet, Text, View, ScrollView, TouchableOpacity, TextInput, Alert, ActivityIndicator } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { ShieldCheck, Calendar, User, FileText, Plus, Trash2, ArrowLeft } from 'lucide-react-native';
-import { useRouter } from 'expo-router';
-import { db } from '../../constants/firebaseConfig';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from 'firebase/firestore';
+import React, { useState, useEffect } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  Alert,
+  ActivityIndicator,
+} from "react-native";
+import { Colors } from "../../constants/Colors";
+import {
+  ShieldCheck,
+  Calendar,
+  User,
+  FileText,
+  Plus,
+  Trash2,
+  ArrowLeft,
+} from "lucide-react-native";
+import { useRouter } from "expo-router";
+import { db } from "../../constants/firebaseConfig";
+import {
+  collection,
+  addDoc,
+  deleteDoc,
+  doc,
+  onSnapshot,
+  query,
+  orderBy,
+} from "firebase/firestore";
 
 export default function GerenciarObrigacoes() {
   const router = useRouter();
-  const [nome, setNome] = useState('');
-  const [data, setData] = useState('');
-  const [obrigacao, setObrigacao] = useState('');
+  const [nome, setNome] = useState("");
+  const [data, setData] = useState("");
+  const [obrigacao, setObrigacao] = useState("");
   const [listaObrigacoes, setListaObrigacoes] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const q = query(collection(db, "obrigacoes"), orderBy("data", "asc"));
-    const unsubscribe = onSnapshot(q, (querySnapshot) => {
-      const docs: any[] = [];
-      querySnapshot.forEach((doc) => {
-        docs.push({ id: doc.id, ...doc.data() });
-      });
-      setListaObrigacoes(docs);
-      setFetching(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (querySnapshot) => {
+        const docs: any[] = [];
+        querySnapshot.forEach((doc) => {
+          docs.push({ id: doc.id, ...doc.data() });
+        });
+        setListaObrigacoes(docs);
+        setErrorMessage(null);
+        setFetching(false);
+      },
+      (error) => {
+        console.warn("Erro ao carregar obrigações:", error);
+        setErrorMessage(
+          "Sem permissão para acessar as obrigações. Verifique as regras do Firestore.",
+        );
+        setFetching(false);
+      },
+    );
     return () => unsubscribe();
   }, []);
 
   const handleAddObrigacao = async () => {
     if (!nome || !data || !obrigacao) {
-      Alert.alert("Erro", "Preencha todos os campos para cadastrar a obrigação.");
+      Alert.alert(
+        "Erro",
+        "Preencha todos os campos para cadastrar a obrigação.",
+      );
       return;
     }
 
@@ -40,11 +80,11 @@ export default function GerenciarObrigacoes() {
         nome,
         data,
         obrigacao,
-        createdAt: new Date().toISOString()
+        createdAt: new Date().toISOString(),
       });
-      setNome('');
-      setData('');
-      setObrigacao('');
+      setNome("");
+      setData("");
+      setObrigacao("");
       Alert.alert("Sucesso", "Obrigação cadastrada com sucesso!");
     } catch (error) {
       Alert.alert("Erro", "Não foi possível salvar a obrigação.");
@@ -59,25 +99,28 @@ export default function GerenciarObrigacoes() {
       "Deseja realmente remover esta obrigação?",
       [
         { text: "Cancelar", style: "cancel" },
-        { 
-          text: "Excluir", 
-          style: "destructive", 
+        {
+          text: "Excluir",
+          style: "destructive",
           onPress: async () => {
             try {
               await deleteDoc(doc(db, "obrigacoes", id));
             } catch (error) {
               Alert.alert("Erro", "Não foi possível excluir.");
             }
-          }
-        }
-      ]
+          },
+        },
+      ],
     );
   };
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          style={styles.backButton}
+        >
           <ArrowLeft color={Colors.white} size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Gerenciar Obrigações</Text>
@@ -85,7 +128,12 @@ export default function GerenciarObrigacoes() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        <View style={[styles.card, { borderTopWidth: 4, borderTopColor: Colors.gold }]}>
+        <View
+          style={[
+            styles.card,
+            { borderTopWidth: 4, borderTopColor: Colors.gold },
+          ]}
+        >
           <View style={styles.cardHeader}>
             <ShieldCheck color={Colors.primary} size={24} />
             <Text style={styles.cardTitle}>Nova Obrigação</Text>
@@ -115,7 +163,11 @@ export default function GerenciarObrigacoes() {
 
           <Text style={styles.label}>Descrição da Obrigação</Text>
           <View style={[styles.inputWrapper, styles.textAreaWrapper]}>
-            <FileText color="#999" size={20} style={[styles.inputIcon, { marginTop: 12 }]} />
+            <FileText
+              color="#999"
+              size={20}
+              style={[styles.inputIcon, { marginTop: 12 }]}
+            />
             <TextInput
               style={[styles.input, styles.textArea]}
               placeholder="Ex: Obrigação de 3 anos, Amaci, etc."
@@ -126,8 +178,14 @@ export default function GerenciarObrigacoes() {
             />
           </View>
 
-          <TouchableOpacity style={styles.addButton} onPress={handleAddObrigacao} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : (
+          <TouchableOpacity
+            style={styles.addButton}
+            onPress={handleAddObrigacao}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="#fff" />
+            ) : (
               <>
                 <Plus color={Colors.white} size={20} />
                 <Text style={styles.addButtonText}>Cadastrar Obrigação</Text>
@@ -137,30 +195,47 @@ export default function GerenciarObrigacoes() {
         </View>
 
         <Text style={styles.sectionTitle}>Próximas Obrigações</Text>
-        
+
         {fetching ? (
-          <ActivityIndicator color={Colors.primary} size="large" style={{ marginTop: 20 }} />
+          <ActivityIndicator
+            color={Colors.primary}
+            size="large"
+            style={{ marginTop: 20 }}
+          />
+        ) : errorMessage ? (
+          <Text style={styles.emptyText}>{errorMessage}</Text>
         ) : (
           listaObrigacoes.map((item) => (
-            <View key={item.id} style={[styles.itemCard, { borderLeftWidth: 4, borderLeftColor: Colors.gold }]}>
+            <View
+              key={item.id}
+              style={[
+                styles.itemCard,
+                { borderLeftWidth: 4, borderLeftColor: Colors.gold },
+              ]}
+            >
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.nome}</Text>
                 <Text style={styles.itemObrigacao}>{item.obrigacao}</Text>
                 <View style={styles.dateRow}>
                   <Calendar color={Colors.primary} size={14} />
                   <Text style={styles.itemData}>
-                    {item.data.includes('-') ? item.data.split('-').reverse().join('/') : item.data}
+                    {item.data.includes("-")
+                      ? item.data.split("-").reverse().join("/")
+                      : item.data}
                   </Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => handleDelete(item.id)} style={styles.deleteButton}>
+              <TouchableOpacity
+                onPress={() => handleDelete(item.id)}
+                style={styles.deleteButton}
+              >
                 <Trash2 color="#ff4444" size={20} />
               </TouchableOpacity>
             </View>
           ))
         )}
 
-        {!fetching && listaObrigacoes.length === 0 && (
+        {!fetching && !errorMessage && listaObrigacoes.length === 0 && (
           <Text style={styles.emptyText}>Nenhuma obrigação cadastrada.</Text>
         )}
       </ScrollView>
@@ -171,23 +246,23 @@ export default function GerenciarObrigacoes() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9f9f9',
+    backgroundColor: "#f9f9f9",
   },
   header: {
     backgroundColor: Colors.primary,
     paddingTop: 50,
     paddingBottom: 20,
     paddingHorizontal: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },
   headerTitle: {
     color: Colors.white,
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
   },
   backButton: {
     padding: 5,
@@ -206,36 +281,36 @@ const styles = StyleSheet.create({
     borderColor: Colors.border,
   },
   cardHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginBottom: 20,
   },
   cardTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.primary,
     marginLeft: 10,
   },
   label: {
     fontSize: 14,
-    color: '#666',
+    color: "#666",
     marginBottom: 8,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   inputWrapper: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f5f5f5",
     borderRadius: 10,
     paddingHorizontal: 12,
     marginBottom: 20,
     borderWidth: 1,
-    borderColor: '#eee',
+    borderColor: "#eee",
     height: 50,
   },
   textAreaWrapper: {
     height: 100,
-    alignItems: 'flex-start',
+    alignItems: "flex-start",
   },
   inputIcon: {
     marginRight: 10,
@@ -246,15 +321,15 @@ const styles = StyleSheet.create({
     color: Colors.textDark,
   },
   textArea: {
-    height: '100%',
+    height: "100%",
     paddingTop: 12,
-    textAlignVertical: 'top',
+    textAlignVertical: "top",
   },
   addButton: {
     backgroundColor: Colors.primary,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     padding: 18,
     borderRadius: 12,
     elevation: 2,
@@ -263,12 +338,12 @@ const styles = StyleSheet.create({
   addButtonText: {
     color: Colors.white,
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     marginLeft: 10,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.textDark,
     marginBottom: 15,
   },
@@ -277,8 +352,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 15,
     marginBottom: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     borderWidth: 1,
     borderColor: Colors.border,
     elevation: 2,
@@ -288,32 +363,32 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.textDark,
   },
   itemObrigacao: {
     fontSize: 14,
     color: Colors.primary,
     marginTop: 2,
-    fontWeight: '500',
+    fontWeight: "500",
   },
   dateRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     marginTop: 8,
   },
   itemData: {
     fontSize: 13,
-    color: '#888',
+    color: "#888",
     marginLeft: 5,
   },
   deleteButton: {
     padding: 10,
   },
   emptyText: {
-    textAlign: 'center',
-    color: '#999',
+    textAlign: "center",
+    color: "#999",
     marginTop: 20,
-    fontStyle: 'italic',
+    fontStyle: "italic",
   },
 });
