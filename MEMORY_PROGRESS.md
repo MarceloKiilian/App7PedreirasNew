@@ -16,8 +16,8 @@
 
 ## Orientações para a Retomada:
 1. O ambiente de desenvolvimento está pronto e rodando no emulador.
-2. Próximo passo sugerido: Iniciar a migração dos dados de **Banhos** e **Ervas** de constantes estáticas para o Firestore, criando suas respectivas telas administrativas.
-3. Testar o login administrativo com as credenciais padrão: `admin@7pedreiras.com.br` / `123456`.
+2. A prioridade atual passa a ser segurança e autenticação da área administrativa, conforme `.github/copilot-instructions.md` e os prompts em `.github/prompts/`.
+3. Credenciais administrativas não devem ser registradas em arquivos versionados. Consulte o Firebase Authentication para contas de teste/desenvolvimento.
 
 ---
 *Evolução salva. Pronto para a próxima etapa!*
