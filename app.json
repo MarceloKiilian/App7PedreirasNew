@@ -3,6 +3,7 @@
     "name": "App7PedreirasNew",
     "slug": "App7PedreirasNew",
     "version": "1.0.0",
+    "scheme": "app-7-pedreiras",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
@@ -10,12 +11,13 @@
     "splash": {
       "image": "./assets/splash-icon.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#8b4513"
     },
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "com.marcelokiilian.setepedreiras",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -25,6 +27,15 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ab43d600-f735-417f-a19f-32a583dc3c8a"
+      }
     }
   }
 }
