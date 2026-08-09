@@ -1,6 +1,5 @@
-import { Redirect } from 'expo-router';
+import LoginScreen from "../admin/login";
 
-export default function AdminIndex() {
-  // Por padrão, redireciona para a tela de login ao clicar no Tab Admin
-  return <Redirect href="/admin/login" />;
+export default function AdminTabScreen() {
+  return <LoginScreen />;
 }
