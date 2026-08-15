@@ -25,32 +25,87 @@ import type {
 
 const GIRA_COLLECTION = "giras";
 
-const normalizeGiraStatus = (status: unknown): GiraStatus => {
-  if (status === "realizada" || status === "cancelada") {
+const normalizeGiraStatus = (status: unknown): GiraStatus | null => {
+  if (
+    status === "agendada" ||
+    status === "realizada" ||
+    status === "cancelada"
+  ) {
     return status;
   }
 
-  return "agendada";
+  return null;
+};
+
+const warnInvalidGiraDocument = (id: string, reason: string): void => {
+  console.warn(
+    `[girasService] Documento inválido ignorado: ${id}. Motivo: ${reason}`,
+  );
 };
 
 const mapDocumentToGira = (
   snapshot: QueryDocumentSnapshot<DocumentData>,
-): Gira => {
+): Gira | null => {
   const data = snapshot.data();
+
+  const titulo = typeof data.titulo === "string" ? data.titulo.trim() : "";
+  const descricao =
+    typeof data.descricao === "string" ? data.descricao.trim() : "";
+  const local = typeof data.local === "string" ? data.local.trim() : "";
+  const createdBy = typeof data.createdBy === "string" ? data.createdBy : "";
+
+  if (!titulo) {
+    warnInvalidGiraDocument(snapshot.id, "titulo ausente ou vazio");
+    return null;
+  }
+
+  if (!descricao) {
+    warnInvalidGiraDocument(snapshot.id, "descricao ausente ou vazia");
+    return null;
+  }
+
+  if (!(data.inicio instanceof Timestamp)) {
+    warnInvalidGiraDocument(snapshot.id, "inicio inválido ou ausente");
+    return null;
+  }
+
+  if (!local) {
+    warnInvalidGiraDocument(snapshot.id, "local ausente ou vazio");
+    return null;
+  }
+
+  const status = normalizeGiraStatus(data.status);
+  if (!status) {
+    warnInvalidGiraDocument(snapshot.id, "status inválido ou ausente");
+    return null;
+  }
+
+  if (!createdBy) {
+    warnInvalidGiraDocument(snapshot.id, "createdBy ausente ou vazio");
+    return null;
+  }
+
+  if (!(data.createdAt instanceof Timestamp)) {
+    warnInvalidGiraDocument(snapshot.id, "createdAt inválido ou ausente");
+    return null;
+  }
+
+  if (!(data.updatedAt instanceof Timestamp)) {
+    warnInvalidGiraDocument(snapshot.id, "updatedAt inválido ou ausente");
+    return null;
+  }
 
   return {
     id: snapshot.id,
-    titulo: typeof data.titulo === "string" ? data.titulo : "",
-    descricao: typeof data.descricao === "string" ? data.descricao : "",
-    inicio: data.inicio instanceof Timestamp ? data.inicio : Timestamp.now(),
-    local: typeof data.local === "string" ? data.local : "",
+    titulo,
+    descricao,
+    inicio: data.inicio,
+    local,
     publicada: Boolean(data.publicada),
-    status: normalizeGiraStatus(data.status),
-    createdBy: typeof data.createdBy === "string" ? data.createdBy : "",
-    createdAt:
-      data.createdAt instanceof Timestamp ? data.createdAt : Timestamp.now(),
-    updatedAt:
-      data.updatedAt instanceof Timestamp ? data.updatedAt : Timestamp.now(),
+    status,
+    createdBy,
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt,
   };
 };
 
@@ -100,12 +155,16 @@ export const subscribeToNextPublishedGira = (
   return onSnapshot(
     q,
     (snapshot) => {
-      if (snapshot.empty) {
+      const validGiras = snapshot.docs
+        .map(mapDocumentToGira)
+        .filter((gira): gira is Gira => gira !== null);
+
+      if (validGiras.length === 0) {
         onSuccess(null);
         return;
       }
 
-      onSuccess(mapDocumentToGira(snapshot.docs[0]));
+      onSuccess(validGiras[0]);
     },
     (error) => {
       onError(error);
@@ -128,7 +187,11 @@ export const subscribeToPublishedGiras = (
   return onSnapshot(
     q,
     (snapshot) => {
-      onSuccess(snapshot.docs.map(mapDocumentToGira));
+      const validGiras = snapshot.docs
+        .map(mapDocumentToGira)
+        .filter((gira): gira is Gira => gira !== null);
+
+      onSuccess(validGiras);
     },
     (error) => {
       onError(error);
@@ -145,7 +208,11 @@ export const subscribeToGirasForAdmin = (
   return onSnapshot(
     q,
     (snapshot) => {
-      onSuccess(snapshot.docs.map(mapDocumentToGira));
+      const validGiras = snapshot.docs
+        .map(mapDocumentToGira)
+        .filter((gira): gira is Gira => gira !== null);
+
+      onSuccess(validGiras);
     },
     (error) => {
       onError(error);

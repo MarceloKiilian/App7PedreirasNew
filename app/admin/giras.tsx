@@ -15,7 +15,6 @@ import {
   Calendar,
   FileText,
   Plus,
-  Trash2,
   ArrowLeft,
   MapPin,
   Pencil,
@@ -24,7 +23,7 @@ import {
 } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { auth } from "../../constants/firebaseConfig";
-import type { Gira, GiraStatus } from "../../types/Gira";
+import type { Gira } from "../../types/Gira";
 import {
   createGira,
   formatarData,
@@ -89,9 +88,42 @@ export default function GerenciarGiras() {
     const [ano, mes, dia] = data.split("-").map(Number);
     const [hora, minuto] = horario.split(":").map(Number);
 
+    if (
+      !Number.isInteger(ano) ||
+      !Number.isInteger(mes) ||
+      !Number.isInteger(dia) ||
+      !Number.isInteger(hora) ||
+      !Number.isInteger(minuto)
+    ) {
+      return null;
+    }
+
+    if (mes < 1 || mes > 12) {
+      return null;
+    }
+
+    if (dia < 1) {
+      return null;
+    }
+
+    if (hora < 0 || hora > 23) {
+      return null;
+    }
+
+    if (minuto < 0 || minuto > 59) {
+      return null;
+    }
+
     const parsedDate = new Date(ano, mes - 1, dia, hora, minuto);
 
-    if (Number.isNaN(parsedDate.getTime())) {
+    if (
+      Number.isNaN(parsedDate.getTime()) ||
+      parsedDate.getFullYear() !== ano ||
+      parsedDate.getMonth() !== mes - 1 ||
+      parsedDate.getDate() !== dia ||
+      parsedDate.getHours() !== hora ||
+      parsedDate.getMinutes() !== minuto
+    ) {
       return null;
     }
 
@@ -175,7 +207,7 @@ export default function GerenciarGiras() {
   };
 
   const handleCancelStatus = async (item: Gira) => {
-    if (!item.id) {
+    if (!item.id || item.status !== "agendada") {
       return;
     }
 
@@ -184,6 +216,19 @@ export default function GerenciarGiras() {
       Alert.alert("Sucesso", "Gira cancelada com sucesso.");
     } catch (error) {
       Alert.alert("Erro", "Não foi possível cancelar a gira.");
+    }
+  };
+
+  const handleMarkAsRealizada = async (item: Gira) => {
+    if (!item.id || item.status !== "agendada") {
+      return;
+    }
+
+    try {
+      await updateGiraStatus(item.id, "realizada");
+      Alert.alert("Sucesso", "Gira marcada como realizada.");
+    } catch (error) {
+      Alert.alert("Erro", "Não foi possível marcar a gira como realizada.");
     }
   };
 
@@ -363,32 +408,36 @@ export default function GerenciarGiras() {
                 >
                   <Pencil color={Colors.primary} size={18} />
                 </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleCancelStatus(item)}
-                  style={styles.actionButton}
-                >
-                  <XCircle color="#b00020" size={18} />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() => handleTogglePublicacao(item)}
-                  style={styles.actionButton}
-                >
-                  <CheckCircle2
-                    color={item.publicada ? Colors.accent : "#999"}
-                    size={18}
-                  />
-                </TouchableOpacity>
-                <TouchableOpacity
-                  onPress={() =>
-                    Alert.alert(
-                      "Manter histórico",
-                      "A gira foi mantida no histórico e não removida permanentemente.",
-                    )
-                  }
-                  style={styles.actionButton}
-                >
-                  <Trash2 color="#999" size={18} />
-                </TouchableOpacity>
+
+                {item.status === "agendada" && (
+                  <TouchableOpacity
+                    onPress={() => handleCancelStatus(item)}
+                    style={styles.actionButton}
+                  >
+                    <XCircle color="#b00020" size={18} />
+                  </TouchableOpacity>
+                )}
+
+                {item.status === "agendada" && (
+                  <TouchableOpacity
+                    onPress={() => handleMarkAsRealizada(item)}
+                    style={styles.actionButton}
+                  >
+                    <CheckCircle2 color={Colors.accent} size={18} />
+                  </TouchableOpacity>
+                )}
+
+                {item.status !== "realizada" && item.status !== "cancelada" && (
+                  <TouchableOpacity
+                    onPress={() => handleTogglePublicacao(item)}
+                    style={styles.actionButton}
+                  >
+                    <CheckCircle2
+                      color={item.publicada ? Colors.accent : "#999"}
+                      size={18}
+                    />
+                  </TouchableOpacity>
+                )}
               </View>
             </View>
           ))

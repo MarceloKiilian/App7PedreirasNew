@@ -41,7 +41,9 @@ export default function HomeScreen() {
         setError(null);
         setLoading(false);
       },
-      () => {
+      (error) => {
+        console.error("Erro ao carregar próxima gira:", error);
+
         setProximaGira(null);
         setError("Não foi possível carregar a próxima gira neste momento.");
         setLoading(false);
