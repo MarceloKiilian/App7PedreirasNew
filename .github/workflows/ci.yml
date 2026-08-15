@@ -1,0 +1,38 @@
+name: CI - App 7 Pedreiras
+
+on:
+  push:
+    branches:
+      - "feature/**"
+      - "fix/**"
+      - "chore/**"
+      - "hotfix/**"
+      - develop
+      - release
+      - main
+  pull_request:
+    branches:
+      - develop
+      - release
+      - main
+
+jobs:
+  validate:
+    name: Validar aplicação
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependências
+        run: npm ci
+
+      - name: Verificar TypeScript
+        run: npx tsc --noEmit
