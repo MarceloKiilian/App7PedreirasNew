@@ -1,8 +1,8 @@
 {
   "expo": {
-    "name": "App7PedreirasNew",
+    "name": "TOC Caboclo 7 Pedreiras",
     "slug": "App7PedreirasNew",
-    "version": "1.0.1",
+    "version": "1.0.2",
     "scheme": "app-7-pedreiras",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -17,7 +17,7 @@
       "supportsTablet": true
     },
     "android": {
-      "package": "com.marcelokiilian.setepedreiras",
+      "package": "com.marcelokiilian.app7pedreiras",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
@@ -30,7 +30,8 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      "expo-font"
     ],
     "extra": {
       "router": {},
