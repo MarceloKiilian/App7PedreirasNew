@@ -51,7 +51,7 @@ jobs:
         github.ref == 'refs/heads/release'
       )
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
 
     steps:
@@ -66,7 +66,49 @@ jobs:
           case "$HEAD_BRANCH" in
             develop)
               BASE_BRANCH="release"
-              PR_TITLE="Promover develop para release"
+              OPEN_RELEASE_PRS=$(gh pr list \
+                --base "$BASE_BRANCH" \
+                --state open \
+                --json headRefName \
+                --jq '[.[] | select(.headRefName | startswith("release/v"))] | length')
+
+              if [ "$OPEN_RELEASE_PRS" -gt 0 ]; then
+                echo "Já existe um Pull Request de versão aberto para release."
+                exit 0
+              fi
+
+              git fetch origin release
+              CURRENT_VERSION=$(git show origin/release:package.json | node -e '
+                let input = "";
+                process.stdin.on("data", chunk => input += chunk);
+                process.stdin.on("end", () => console.log(JSON.parse(input).version));
+              ')
+              NEXT_VERSION=$(node -e '
+                const parts = process.argv[1].split(".").map(Number);
+                if (parts.length !== 3 || parts.some(Number.isNaN)) {
+                  throw new Error("Versão atual inválida: " + process.argv[1]);
+                }
+                console.log(`${parts[0]}.${parts[1]}.${parts[2] + 1}`);
+              ' "$CURRENT_VERSION")
+
+              RELEASE_BRANCH="release/v$NEXT_VERSION"
+              git switch -c "$RELEASE_BRANCH"
+              npm version "$NEXT_VERSION" --no-git-tag-version
+              node -e '
+                const fs = require("fs");
+                const config = JSON.parse(fs.readFileSync("app.json", "utf8"));
+                config.expo.version = process.argv[1];
+                fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n");
+              ' "$NEXT_VERSION"
+
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add app.json package.json package-lock.json
+              git commit -m "chore: prepara versão $NEXT_VERSION"
+              git push origin "$RELEASE_BRANCH"
+
+              HEAD_BRANCH="$RELEASE_BRANCH"
+              PR_TITLE="Preparar versão $NEXT_VERSION para release"
               ;;
             release)
               BASE_BRANCH="main"
