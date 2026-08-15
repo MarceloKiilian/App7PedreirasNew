@@ -36,3 +36,44 @@ jobs:
 
       - name: Verificar TypeScript
         run: npx tsc --noEmit
+
+  create-pull-request:
+    name: Abrir PR para develop
+    needs: validate
+    runs-on: ubuntu-latest
+    if: >-
+      github.event_name == 'push' &&
+      (
+        startsWith(github.ref, 'refs/heads/feature/') ||
+        startsWith(github.ref, 'refs/heads/fix/') ||
+        startsWith(github.ref, 'refs/heads/chore/')
+      )
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - name: Checkout do código
+        uses: actions/checkout@v4
+
+      - name: Verificar e abrir Pull Request
+        env:
+          GH_TOKEN: ${{ github.token }}
+          HEAD_BRANCH: ${{ github.ref_name }}
+        run: |
+          OPEN_PRS=$(gh pr list \
+            --head "$HEAD_BRANCH" \
+            --base develop \
+            --state open \
+            --json number \
+            --jq 'length')
+
+          if [ "$OPEN_PRS" -eq 0 ]; then
+            gh pr create \
+              --base develop \
+              --head "$HEAD_BRANCH" \
+              --title "$HEAD_BRANCH" \
+              --body "Pull Request criado automaticamente após a validação do CI."
+          else
+            echo "Já existe um Pull Request aberto para esta branch."
+          fi
