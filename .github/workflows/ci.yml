@@ -7,6 +7,7 @@ on:
       - "fix/**"
       - "chore/**"
       - "hotfix/**"
+      - "release/**"
       - develop
       - release
       - main
@@ -23,10 +24,10 @@ jobs:
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Configurar Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v7
         with:
           node-version: 20
           cache: npm
@@ -38,7 +39,7 @@ jobs:
         run: npx tsc --noEmit
 
   create-pull-request:
-    name: Abrir PR para develop
+    name: Abrir próximo PR do fluxo
     needs: validate
     runs-on: ubuntu-latest
     if: >-
@@ -46,34 +47,117 @@ jobs:
       (
         startsWith(github.ref, 'refs/heads/feature/') ||
         startsWith(github.ref, 'refs/heads/fix/') ||
-        startsWith(github.ref, 'refs/heads/chore/')
+        startsWith(github.ref, 'refs/heads/chore/') ||
+        startsWith(github.ref, 'refs/heads/hotfix/') ||
+        github.ref == 'refs/heads/develop' ||
+        github.ref == 'refs/heads/release'
       )
     permissions:
-      contents: read
+      contents: write
       pull-requests: write
+      statuses: write
 
     steps:
       - name: Checkout do código
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
 
       - name: Verificar e abrir Pull Request
         env:
           GH_TOKEN: ${{ github.token }}
           HEAD_BRANCH: ${{ github.ref_name }}
         run: |
+          case "$HEAD_BRANCH" in
+            develop)
+              BASE_BRANCH="release"
+              OPEN_RELEASE_PRS=$(gh pr list \
+                --base "$BASE_BRANCH" \
+                --state open \
+                --json headRefName \
+                --jq '[.[] | select(.headRefName | startswith("release/v"))] | length')
+
+              if [ "$OPEN_RELEASE_PRS" -gt 0 ]; then
+                echo "Já existe um Pull Request de versão aberto para release."
+                exit 0
+              fi
+
+              git fetch origin release
+              CURRENT_VERSION=$(git show origin/release:package.json | node -e '
+                let input = "";
+                process.stdin.on("data", chunk => input += chunk);
+                process.stdin.on("end", () => console.log(JSON.parse(input).version));
+              ')
+              NEXT_VERSION=$(node -e '
+                const parts = process.argv[1].split(".").map(Number);
+                if (parts.length !== 3 || parts.some(Number.isNaN)) {
+                  throw new Error("Versão atual inválida: " + process.argv[1]);
+                }
+                console.log(`${parts[0]}.${parts[1]}.${parts[2] + 1}`);
+              ' "$CURRENT_VERSION")
+
+              RELEASE_BRANCH="release/v$NEXT_VERSION"
+              git switch -c "$RELEASE_BRANCH"
+              npm version "$NEXT_VERSION" --no-git-tag-version
+              node -e '
+                const fs = require("fs");
+                const config = JSON.parse(fs.readFileSync("app.json", "utf8"));
+                config.expo.version = process.argv[1];
+                fs.writeFileSync("app.json", JSON.stringify(config, null, 2) + "\n");
+              ' "$NEXT_VERSION"
+
+              git config user.name "github-actions[bot]"
+              git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+              git add app.json package.json package-lock.json
+              git commit -m "chore: prepara versão $NEXT_VERSION"
+
+              npm ci
+              npx tsc --noEmit
+
+              git push origin "$RELEASE_BRANCH"
+
+              RELEASE_SHA=$(git rev-parse HEAD)
+              gh api \
+                --method POST \
+                "repos/${{ github.repository }}/statuses/$RELEASE_SHA" \
+                -f state=success \
+                -f context="Validar aplicação" \
+                -f description="npm ci e TypeScript validados na versão $NEXT_VERSION"
+
+              HEAD_BRANCH="$RELEASE_BRANCH"
+              PR_TITLE="Preparar versão $NEXT_VERSION para release"
+              ;;
+            hotfix/*)
+              BASE_BRANCH="main"
+              PR_TITLE="$HEAD_BRANCH"
+              ;;
+            release)
+              BASE_BRANCH="main"
+              PR_TITLE="Promover release para main"
+              ;;
+            *)
+              BASE_BRANCH="develop"
+              PR_TITLE="$HEAD_BRANCH"
+              ;;
+          esac
+
           OPEN_PRS=$(gh pr list \
             --head "$HEAD_BRANCH" \
-            --base develop \
+            --base "$BASE_BRANCH" \
             --state open \
             --json number \
             --jq 'length')
 
           if [ "$OPEN_PRS" -eq 0 ]; then
             gh pr create \
-              --base develop \
+              --base "$BASE_BRANCH" \
               --head "$HEAD_BRANCH" \
-              --title "$HEAD_BRANCH" \
+              --title "$PR_TITLE" \
               --body "Pull Request criado automaticamente após a validação do CI."
           else
-            echo "Já existe um Pull Request aberto para esta branch."
+            echo "Já existe um Pull Request aberto de $HEAD_BRANCH para $BASE_BRANCH."
           fi
