@@ -38,7 +38,7 @@ jobs:
         run: npx tsc --noEmit
 
   create-pull-request:
-    name: Abrir PR para develop
+    name: Abrir próximo PR do fluxo
     needs: validate
     runs-on: ubuntu-latest
     if: >-
@@ -46,7 +46,9 @@ jobs:
       (
         startsWith(github.ref, 'refs/heads/feature/') ||
         startsWith(github.ref, 'refs/heads/fix/') ||
-        startsWith(github.ref, 'refs/heads/chore/')
+        startsWith(github.ref, 'refs/heads/chore/') ||
+        github.ref == 'refs/heads/develop' ||
+        github.ref == 'refs/heads/release'
       )
     permissions:
       contents: read
@@ -61,19 +63,34 @@ jobs:
           GH_TOKEN: ${{ github.token }}
           HEAD_BRANCH: ${{ github.ref_name }}
         run: |
+          case "$HEAD_BRANCH" in
+            develop)
+              BASE_BRANCH="release"
+              PR_TITLE="Promover develop para release"
+              ;;
+            release)
+              BASE_BRANCH="main"
+              PR_TITLE="Promover release para main"
+              ;;
+            *)
+              BASE_BRANCH="develop"
+              PR_TITLE="$HEAD_BRANCH"
+              ;;
+          esac
+
           OPEN_PRS=$(gh pr list \
             --head "$HEAD_BRANCH" \
-            --base develop \
+            --base "$BASE_BRANCH" \
             --state open \
             --json number \
             --jq 'length')
 
           if [ "$OPEN_PRS" -eq 0 ]; then
             gh pr create \
-              --base develop \
+              --base "$BASE_BRANCH" \
               --head "$HEAD_BRANCH" \
-              --title "$HEAD_BRANCH" \
+              --title "$PR_TITLE" \
               --body "Pull Request criado automaticamente após a validação do CI."
           else
-            echo "Já existe um Pull Request aberto para esta branch."
+            echo "Já existe um Pull Request aberto de $HEAD_BRANCH para $BASE_BRANCH."
           fi
