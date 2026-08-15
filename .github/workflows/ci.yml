@@ -7,6 +7,7 @@ on:
       - "fix/**"
       - "chore/**"
       - "hotfix/**"
+      - "release/**"
       - develop
       - release
       - main
@@ -47,16 +48,24 @@ jobs:
         startsWith(github.ref, 'refs/heads/feature/') ||
         startsWith(github.ref, 'refs/heads/fix/') ||
         startsWith(github.ref, 'refs/heads/chore/') ||
+        startsWith(github.ref, 'refs/heads/hotfix/') ||
         github.ref == 'refs/heads/develop' ||
         github.ref == 'refs/heads/release'
       )
     permissions:
       contents: write
       pull-requests: write
+      statuses: write
 
     steps:
       - name: Checkout do código
         uses: actions/checkout@v7
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v7
+        with:
+          node-version: 20
+          cache: npm
 
       - name: Verificar e abrir Pull Request
         env:
@@ -105,10 +114,26 @@ jobs:
               git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
               git add app.json package.json package-lock.json
               git commit -m "chore: prepara versão $NEXT_VERSION"
+
+              npm ci
+              npx tsc --noEmit
+
               git push origin "$RELEASE_BRANCH"
+
+              RELEASE_SHA=$(git rev-parse HEAD)
+              gh api \
+                --method POST \
+                "repos/${{ github.repository }}/statuses/$RELEASE_SHA" \
+                -f state=success \
+                -f context="Validar aplicação" \
+                -f description="npm ci e TypeScript validados na versão $NEXT_VERSION"
 
               HEAD_BRANCH="$RELEASE_BRANCH"
               PR_TITLE="Preparar versão $NEXT_VERSION para release"
+              ;;
+            hotfix/*)
+              BASE_BRANCH="main"
+              PR_TITLE="$HEAD_BRANCH"
               ;;
             release)
               BASE_BRANCH="main"
