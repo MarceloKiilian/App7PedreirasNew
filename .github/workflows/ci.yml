@@ -7,7 +7,7 @@ on:
       - "fix/**"
       - "chore/**"
       - "hotfix/**"
-      - "release/**"
+      - "release-*"
       - develop
       - release
       - main
@@ -79,7 +79,7 @@ jobs:
                 --base "$BASE_BRANCH" \
                 --state open \
                 --json headRefName \
-                --jq '[.[] | select(.headRefName | startswith("release/v"))] | length')
+                --jq '[.[] | select(.headRefName | startswith("release-v"))] | length')
 
               if [ "$OPEN_RELEASE_PRS" -gt 0 ]; then
                 echo "Já existe um Pull Request de versão aberto para release."
@@ -100,7 +100,7 @@ jobs:
                 console.log(`${parts[0]}.${parts[1]}.${parts[2] + 1}`);
               ' "$CURRENT_VERSION")
 
-              RELEASE_BRANCH="release/v$NEXT_VERSION"
+              RELEASE_BRANCH="release-v$NEXT_VERSION"
               git switch -c "$RELEASE_BRANCH"
               npm version "$NEXT_VERSION" --no-git-tag-version
               node -e '
