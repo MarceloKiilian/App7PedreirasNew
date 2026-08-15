@@ -2,7 +2,7 @@
   "expo": {
     "name": "TOC Caboclo 7 Pedreiras",
     "slug": "App7PedreirasNew",
-    "version": "1.0.0",
+    "version": "1.0.2",
     "scheme": "app-7-pedreiras",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
