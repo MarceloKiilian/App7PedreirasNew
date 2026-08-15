@@ -81,10 +81,28 @@ Do not claim that an app flow works unless it was either executed successfully o
 
 ## Git workflow
 
-- Do not work directly on `master` for feature or fix work when a task branch is available.
+The repository uses a controlled promotion flow:
+
+`feature/*` or `fix/*` → `develop` → `release` → `main` → production publication.
+
+Branch responsibilities:
+- `develop`: integration and development testing. All normal feature/fix branches target this branch first.
+- `release`: release-candidate / homologation branch. Only tested changes promoted from `develop` should enter it.
+- `main`: production branch. Only approved changes promoted from `release` should enter it. Production publishing must originate from `main`.
+- `feature/*`: new functionality, normally created from the latest `develop`.
+- `fix/*`: non-production fixes, normally created from the latest `develop`.
+- `hotfix/*`: urgent production fixes, created from `main`; after production, the fix must also be propagated back to `release` and `develop`.
+
+Rules:
+- Do not work directly on `develop`, `release`, or `main` for normal feature/fix work.
+- Never target `main` directly from a normal feature/fix branch.
+- Normal PR sequence is: task branch → `develop`, then `develop` → `release`, then `release` → `main`.
+- Do not skip promotion stages unless the user explicitly authorizes an emergency/hotfix workflow.
+- Before opening a PR, update the task branch from the current target branch and resolve conflicts deliberately.
 - Use focused commits with descriptions of the actual change.
 - Never commit generated directories such as `node_modules`, `.expo`, `dist`, `ios`, or `android` unless explicitly required.
 - Never overwrite unrelated user changes.
+- Read `.github/BRANCHING.md` for the complete promotion procedure.
 
 ## Current priorities
 

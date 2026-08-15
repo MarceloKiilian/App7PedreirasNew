@@ -1,20 +1,30 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, View, FlatList, TextInput, TouchableOpacity, Modal } from 'react-native';
-import { Colors } from '../../constants/Colors';
-import { ORACOES, Oracao } from '../../constants/OracoesData';
-import { Search, ChevronRight, X, BookOpen } from 'lucide-react-native';
+import React, { useState } from "react";
+import {
+  StyleSheet,
+  Text,
+  View,
+  FlatList,
+  TextInput,
+  TouchableOpacity,
+  Modal,
+} from "react-native";
+import { Colors } from "../../constants/Colors";
+import { ORACOES, Oracao } from "../../constants/OracoesData";
+import { Search, ChevronRight, X, BookOpen } from "lucide-react-native";
 
 export default function OracoesScreen() {
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState("");
   const [selectedOracao, setSelectedOracao] = useState<Oracao | null>(null);
 
-  const filteredOracoes = ORACOES.filter(
-    oracao =>
-      oracao.titulo.toLowerCase().includes(search.toLowerCase())
+  const filteredOracoes = ORACOES.filter((oracao) =>
+    oracao.titulo.toLowerCase().includes(search.toLowerCase()),
   );
 
   const renderItem = ({ item }: { item: Oracao }) => (
-    <TouchableOpacity style={[styles.item, { borderTopWidth: 4, borderTopColor: Colors.green }]} onPress={() => setSelectedOracao(item)}>
+    <TouchableOpacity
+      style={[styles.item, { borderTopWidth: 4, borderTopColor: Colors.green }]}
+      onPress={() => setSelectedOracao(item)}
+    >
       <View style={styles.iconContainer}>
         <BookOpen color={Colors.primary} size={24} />
       </View>
@@ -27,7 +37,12 @@ export default function OracoesScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={[styles.searchContainer, { borderBottomWidth: 4, borderBottomColor: Colors.green }]}>
+      <View
+        style={[
+          styles.searchContainer,
+          { borderBottomWidth: 4, borderBottomColor: Colors.green },
+        ]}
+      >
         <Search color={Colors.primary} size={20} style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
@@ -40,7 +55,7 @@ export default function OracoesScreen() {
 
       <FlatList
         data={filteredOracoes}
-        keyExtractor={item => item.id}
+        keyExtractor={(item) => item.id}
         renderItem={renderItem}
         contentContainerStyle={styles.listContent}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
@@ -64,7 +79,9 @@ export default function OracoesScreen() {
             <View style={styles.divider} />
             <FlatList
               data={[selectedOracao?.texto]}
-              renderItem={({ item }) => <Text style={styles.textoOracao}>{item}</Text>}
+              renderItem={({ item }) => (
+                <Text style={styles.textoOracao}>{item}</Text>
+              )}
               keyExtractor={(_, index) => index.toString()}
             />
           </View>
@@ -80,8 +97,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.white,
   },
   searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     backgroundColor: Colors.white,
     margin: 15,
     paddingHorizontal: 15,
@@ -97,15 +114,15 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 16,
-    color: '#333',
+    color: "#333",
   },
   listContent: {
     paddingHorizontal: 15,
     paddingBottom: 20,
   },
   item: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     padding: 15,
     backgroundColor: Colors.white,
     borderRadius: 12,
@@ -115,7 +132,7 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   iconContainer: {
-    backgroundColor: '#fef5e7',
+    backgroundColor: "#fef5e7",
     padding: 10,
     borderRadius: 10,
     marginRight: 15,
@@ -125,7 +142,7 @@ const styles = StyleSheet.create({
   },
   titulo: {
     fontSize: 18,
-    fontWeight: '600',
+    fontWeight: "600",
     color: Colors.textDark,
   },
   separator: {
@@ -133,25 +150,25 @@ const styles = StyleSheet.create({
   },
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    justifyContent: 'flex-end',
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
   },
   modalContent: {
     backgroundColor: Colors.white,
     borderTopLeftRadius: 25,
     borderTopRightRadius: 25,
     padding: 20,
-    maxHeight: '85%',
+    maxHeight: "85%",
   },
   modalHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
     marginBottom: 5,
   },
   modalTitle: {
     fontSize: 22,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     color: Colors.primary,
   },
   divider: {
@@ -163,9 +180,8 @@ const styles = StyleSheet.create({
   textoOracao: {
     fontSize: 18,
     lineHeight: 28,
-    color: '#333',
-    textAlign: 'center',
+    color: "#333",
+    textAlign: "center",
     paddingBottom: 40,
-    whiteSpace: 'pre-wrap',
   },
 });
