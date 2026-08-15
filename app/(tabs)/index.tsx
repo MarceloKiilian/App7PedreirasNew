@@ -113,14 +113,6 @@ export default function HomeScreen() {
             </View>
           </View>
 
-          <View style={styles.infoRow}>
-            <MapPin color={Colors.primary} size={24} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Local</Text>
-              <Text style={styles.infoValue}>{proximaGira.local}</Text>
-            </View>
-          </View>
-
           <Text style={styles.giraTitle}>{proximaGira.titulo}</Text>
           <Text style={styles.description}>{proximaGira.descricao}</Text>
         </View>
@@ -138,14 +130,6 @@ export default function HomeScreen() {
             <View style={styles.infoTextContainer}>
               <Text style={styles.infoLabel}>Data</Text>
               <Text style={styles.infoValue}>Em breve</Text>
-            </View>
-          </View>
-
-          <View style={styles.infoRow}>
-            <MapPin color={Colors.primary} size={24} />
-            <View style={styles.infoTextContainer}>
-              <Text style={styles.infoLabel}>Local</Text>
-              <Text style={styles.infoValue}>Aguardando definição</Text>
             </View>
           </View>
 

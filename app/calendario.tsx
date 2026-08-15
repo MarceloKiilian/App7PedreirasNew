@@ -76,7 +76,6 @@ export default function CalendarioScreen() {
             </View>
             <View style={styles.info}>
               <Text style={styles.title}>{item.titulo}</Text>
-              <Text style={styles.local}>{item.local}</Text>
               <Text style={styles.descricao}>{item.descricao}</Text>
             </View>
           </View>
@@ -148,11 +147,6 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontWeight: "bold",
     marginBottom: 4,
-  },
-  local: {
-    fontSize: 13,
-    color: "#666",
-    marginBottom: 6,
   },
   descricao: {
     fontSize: 14,

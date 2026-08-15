@@ -9,14 +9,17 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
+  Platform,
 } from "react-native";
+import DateTimePicker, {
+  type DateTimePickerEvent,
+} from "@react-native-community/datetimepicker";
 import { Colors } from "../../constants/Colors";
 import {
   Calendar,
   FileText,
   Plus,
   ArrowLeft,
-  MapPin,
   Pencil,
   CheckCircle2,
   XCircle,
@@ -35,13 +38,16 @@ import {
   updateGiraStatus,
 } from "../../services/girasService";
 
+const DEFAULT_GIRA_LOCAL = "Rua Altair, 8 - Vila Carrão";
+
 export default function GerenciarGiras() {
   const router = useRouter();
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
-  const [data, setData] = useState("");
+  const [data, setData] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const [horario, setHorario] = useState("");
-  const [local, setLocal] = useState("");
+  const [local, setLocal] = useState(DEFAULT_GIRA_LOCAL);
   const [publicada, setPublicada] = useState(false);
   const [giras, setGiras] = useState<Gira[]>([]);
   const [loading, setLoading] = useState(false);
@@ -66,9 +72,10 @@ export default function GerenciarGiras() {
   const resetForm = () => {
     setTitulo("");
     setDescricao("");
-    setData("");
+    setData(null);
+    setShowDatePicker(false);
     setHorario("");
-    setLocal("");
+    setLocal(DEFAULT_GIRA_LOCAL);
     setPublicada(false);
     setEditingId(null);
   };
@@ -78,15 +85,16 @@ export default function GerenciarGiras() {
       return null;
     }
 
-    const dateMatch = /^\d{4}-\d{2}-\d{2}$/.test(data);
     const timeMatch = /^\d{2}:\d{2}$/.test(horario);
 
-    if (!dateMatch || !timeMatch) {
+    if (!timeMatch) {
       return null;
     }
 
-    const [ano, mes, dia] = data.split("-").map(Number);
     const [hora, minuto] = horario.split(":").map(Number);
+    const ano = data.getFullYear();
+    const mes = data.getMonth() + 1;
+    const dia = data.getDate();
 
     if (
       !Number.isInteger(ano) ||
@@ -130,17 +138,29 @@ export default function GerenciarGiras() {
     return parsedDate;
   };
 
+  const handleDateChange = (
+    event: DateTimePickerEvent,
+    selectedDate?: Date,
+  ) => {
+    if (Platform.OS === "android") {
+      setShowDatePicker(false);
+    }
+
+    if (event.type === "set" && selectedDate) {
+      setData(selectedDate);
+    }
+  };
+
   const handleSaveGira = async () => {
     if (
       !titulo.trim() ||
       !descricao.trim() ||
       !data ||
-      !horario ||
-      !local.trim()
+      !horario
     ) {
       Alert.alert(
         "Erro",
-        "Preencha título, descrição, data, horário e local para salvar a gira.",
+        "Preencha título, descrição, data e horário para salvar a gira.",
       );
       return;
     }
@@ -149,7 +169,7 @@ export default function GerenciarGiras() {
     if (!inicio) {
       Alert.alert(
         "Erro",
-        "Informe uma data e horário válidos. Use o formato AAAA-MM-DD e HH:MM.",
+        "Informe uma data e horário válidos. Use o seletor de data e o formato HH:MM para o horário.",
       );
       return;
     }
@@ -200,7 +220,7 @@ export default function GerenciarGiras() {
     setEditingId(item.id ?? null);
     setTitulo(item.titulo);
     setDescricao(item.descricao);
-    setData(formatarData(item.inicio).split("/").reverse().join("-"));
+    setData(item.inicio.toDate());
     setHorario(formatarHorario(item.inicio));
     setLocal(item.local);
     setPublicada(item.publicada);
@@ -295,16 +315,38 @@ export default function GerenciarGiras() {
             />
           </View>
 
-          <Text style={styles.label}>Data (AAAA-MM-DD)</Text>
-          <View style={styles.inputWrapper}>
+          <Text style={styles.label}>Data (DD/MM/AAAA)</Text>
+          <TouchableOpacity
+            style={styles.inputWrapper}
+            onPress={() => setShowDatePicker(true)}
+            accessibilityRole="button"
+            accessibilityLabel="Selecionar data da gira"
+          >
             <Calendar color="#999" size={20} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="2026-08-15"
-              value={data}
-              onChangeText={setData}
-            />
-          </View>
+            <Text style={[styles.input, !data && styles.placeholderText]}>
+              {data ? formatarData(data) : "Selecione a data"}
+            </Text>
+          </TouchableOpacity>
+
+          {showDatePicker && (
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={data ?? new Date()}
+                mode="date"
+                display="default"
+                locale="pt-BR"
+                onChange={handleDateChange}
+              />
+              {Platform.OS === "ios" && (
+                <TouchableOpacity
+                  style={styles.datePickerDoneButton}
+                  onPress={() => setShowDatePicker(false)}
+                >
+                  <Text style={styles.datePickerDoneText}>Concluir</Text>
+                </TouchableOpacity>
+              )}
+            </View>
+          )}
 
           <Text style={styles.label}>Horário (HH:MM)</Text>
           <View style={styles.inputWrapper}>
@@ -314,17 +356,6 @@ export default function GerenciarGiras() {
               placeholder="18:00"
               value={horario}
               onChangeText={setHorario}
-            />
-          </View>
-
-          <Text style={styles.label}>Local</Text>
-          <View style={styles.inputWrapper}>
-            <MapPin color="#999" size={20} style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Sede do Terreiro"
-              value={local}
-              onChangeText={setLocal}
             />
           </View>
 
@@ -531,6 +562,22 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textDark,
     paddingVertical: 12,
+  },
+  placeholderText: {
+    color: "#999",
+  },
+  datePickerContainer: {
+    marginTop: -12,
+    marginBottom: 20,
+  },
+  datePickerDoneButton: {
+    alignSelf: "flex-end",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+  },
+  datePickerDoneText: {
+    color: Colors.primary,
+    fontWeight: "600",
   },
   textAreaInput: {
     minHeight: 92,
