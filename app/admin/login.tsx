@@ -16,12 +16,14 @@ import { Lock, Mail, ChevronRight, ArrowLeft } from "lucide-react-native";
 import { useRouter } from "expo-router";
 import { auth } from "../../constants/firebaseConfig";
 import { signInWithEmailAndPassword } from "firebase/auth";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function LoginScreen() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const router = useRouter();
+  const { refreshAdministrador } = useAuth();
 
   const handleBackToHome = () => {
     router.replace("/(tabs)");
@@ -34,30 +36,43 @@ export default function LoginScreen() {
     }
 
     setLoading(true);
-    console.log("Tentando login com:", email.trim());
-
     try {
-      const userCredential = await signInWithEmailAndPassword(
+      await signInWithEmailAndPassword(
         auth,
         email.trim(),
         password,
       );
-      console.log("Login realizado com sucesso!", userCredential.user.email);
+
+      const administrador = await refreshAdministrador();
+      if (!administrador || !administrador.ativo) {
+        await auth.signOut();
+        Alert.alert(
+          "Acesso nÃ£o autorizado",
+          "Esta conta nÃ£o possui um perfil administrativo ativo.",
+        );
+        return;
+      }
+
       router.replace("/admin/dashboard");
-    } catch (error: any) {
-      console.error("Erro detalhado do Firebase:", error.code, error.message);
+    } catch (error: unknown) {
+      const code =
+        typeof error === "object" && error && "code" in error
+          ? String(error.code)
+          : "";
       let message = "Ocorreu um erro ao tentar entrar.";
 
       if (
-        error.code === "auth/invalid-credential" ||
-        error.code === "auth/wrong-password" ||
-        error.code === "auth/user-not-found"
+        code === "auth/invalid-credential" ||
+        code === "auth/wrong-password" ||
+        code === "auth/user-not-found"
       ) {
         message = "E-mail ou senha incorretos.";
-      } else if (error.code === "auth/invalid-email") {
+      } else if (code === "auth/invalid-email") {
         message = "E-mail inválido.";
-      } else if (error.code === "auth/too-many-requests") {
+      } else if (code === "auth/too-many-requests") {
         message = "Muitas tentativas malsucedidas. Tente novamente mais tarde.";
+      } else if (code === "auth/user-disabled") {
+        message = "Esta conta estÃ¡ desativada.";
       }
 
       Alert.alert("Erro de Login", message);
