@@ -1,0 +1,41 @@
+name: Publicar Android no teste interno
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: google-play-internal
+  cancel-in-progress: false
+
+jobs:
+  build-and-submit:
+    name: Validar, criar build e enviar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v5
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configurar Expo e EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar TypeScript
+        run: npm run typecheck
+
+      - name: Criar build e enviar para o teste interno
+        run: eas build --platform android --profile production --auto-submit --non-interactive --no-wait
