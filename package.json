@@ -1,6 +1,6 @@
 {
   "name": "app7pedreirasnew",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
