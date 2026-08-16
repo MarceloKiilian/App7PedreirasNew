@@ -18,9 +18,11 @@ import {
 import { useRouter } from "expo-router";
 import { auth } from "../../constants/firebaseConfig";
 import { signOut } from "firebase/auth";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function AdminDashboard() {
   const router = useRouter();
+  const { canManageUsers } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -81,6 +83,8 @@ export default function AdminDashboard() {
             color={Colors.green}
           />
 
+          {canManageUsers && (
+            <>
           <AdminMenuButton
             icon={ShieldCheck}
             label="Gerenciar Obrigações"
@@ -88,12 +92,16 @@ export default function AdminDashboard() {
             color={Colors.gold}
           />
 
-          <AdminMenuButton
-            icon={Users}
-            label="Gerenciar Dirigentes"
-            route="/admin/dirigentes"
-            color={Colors.accent}
-          />
+          {canManageUsers && (
+            <AdminMenuButton
+              icon={Users}
+              label="Gerenciar Dirigentes"
+              route="/admin/dirigentes"
+              color={Colors.accent}
+            />
+          )}
+            </>
+          )}
         </View>
 
         <View style={styles.infoCard}>

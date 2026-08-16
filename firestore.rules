@@ -1,0 +1,63 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function adminProfile() {
+      return get(/databases/$(database)/documents/administradores/$(request.auth.uid)).data;
+    }
+
+    function isActiveStaff() {
+      return isSignedIn()
+        && adminProfile().ativo == true
+        && adminProfile().perfil in ['administrador', 'dirigente'];
+    }
+
+    function isDirigente() {
+      return isActiveStaff() && adminProfile().perfil == 'dirigente';
+    }
+
+    match /administradores/{uid} {
+      allow get: if isSignedIn() && (request.auth.uid == uid || isDirigente());
+      allow list: if isDirigente();
+      allow create: if isDirigente()
+        && request.resource.data.keys().hasOnly([
+          'email', 'perfil', 'ativo', 'createdAt', 'createdBy',
+          'updatedAt', 'updatedBy'
+        ])
+        && request.resource.data.email is string
+        && request.resource.data.perfil in ['administrador', 'dirigente']
+        && request.resource.data.ativo == true
+        && request.resource.data.createdAt is timestamp
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.createdBy == request.auth.uid
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow update: if isDirigente()
+        && uid != request.auth.uid
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly([
+          'perfil', 'ativo', 'updatedAt', 'updatedBy'
+        ])
+        && request.resource.data.perfil in ['administrador', 'dirigente']
+        && request.resource.data.ativo is bool
+        && request.resource.data.updatedAt is timestamp
+        && request.resource.data.updatedBy == request.auth.uid;
+      allow delete: if isDirigente() && uid != request.auth.uid;
+    }
+
+    match /giras/{giraId} {
+      allow read: if isActiveStaff() || resource.data.publicada == true;
+      allow create, update, delete: if isActiveStaff();
+    }
+
+    match /obrigacoes/{obrigacaoId} {
+      allow read, create, update, delete: if isDirigente();
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
