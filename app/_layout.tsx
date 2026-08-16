@@ -1,15 +1,17 @@
 import { Stack } from 'expo-router';
+import { AuthProvider } from '../contexts/AuthContext';
 
 export default function RootLayout() {
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: {
-          backgroundColor: '#8b4513',
-        },
-        headerTintColor: '#ffffff',
-      }}
-    >
+    <AuthProvider>
+      <Stack
+        screenOptions={{
+          headerStyle: {
+            backgroundColor: '#8b4513',
+          },
+          headerTintColor: '#ffffff',
+        }}
+      >
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="admin" options={{ headerShown: false }} />
       <Stack.Screen 
@@ -84,6 +86,7 @@ export default function RootLayout() {
           title: 'Sincretismo',
         }} 
       />
-    </Stack>
+      </Stack>
+    </AuthProvider>
   );
 }
