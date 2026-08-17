@@ -4,6 +4,10 @@ import { useLocalSearchParams, Stack } from 'expo-router';
 import { Colors } from '../../constants/Colors';
 import { ORIXAS } from '../../constants/OrixasData';
 
+export function generateStaticParams() {
+  return ORIXAS.map(({ id }) => ({ id }));
+}
+
 export default function OrixaDetailScreen() {
   const { id } = useLocalSearchParams();
   const orixa = ORIXAS.find(o => o.id === id);
