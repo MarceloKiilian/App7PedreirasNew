@@ -9,11 +9,8 @@ import {
   Alert,
   ActivityIndicator,
   Switch,
-  Platform,
 } from "react-native";
-import DateTimePicker, {
-  type DateTimePickerEvent,
-} from "@react-native-community/datetimepicker";
+import GiraDateField from "../../components/GiraDateField";
 import { Colors } from "../../constants/Colors";
 import {
   Calendar,
@@ -45,7 +42,6 @@ export default function GerenciarGiras() {
   const [titulo, setTitulo] = useState("");
   const [descricao, setDescricao] = useState("");
   const [data, setData] = useState<Date | null>(null);
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [horario, setHorario] = useState("");
   const [local, setLocal] = useState(DEFAULT_GIRA_LOCAL);
   const [publicada, setPublicada] = useState(false);
@@ -73,7 +69,6 @@ export default function GerenciarGiras() {
     setTitulo("");
     setDescricao("");
     setData(null);
-    setShowDatePicker(false);
     setHorario("");
     setLocal(DEFAULT_GIRA_LOCAL);
     setPublicada(false);
@@ -136,19 +131,6 @@ export default function GerenciarGiras() {
     }
 
     return parsedDate;
-  };
-
-  const handleDateChange = (
-    event: DateTimePickerEvent,
-    selectedDate?: Date,
-  ) => {
-    if (Platform.OS === "android") {
-      setShowDatePicker(false);
-    }
-
-    if (event.type === "set" && selectedDate) {
-      setData(selectedDate);
-    }
   };
 
   const handleSaveGira = async () => {
@@ -316,37 +298,11 @@ export default function GerenciarGiras() {
           </View>
 
           <Text style={styles.label}>Data (DD/MM/AAAA)</Text>
-          <TouchableOpacity
-            style={styles.inputWrapper}
-            onPress={() => setShowDatePicker(true)}
-            accessibilityRole="button"
-            accessibilityLabel="Selecionar data da gira"
-          >
-            <Calendar color="#999" size={20} style={styles.inputIcon} />
-            <Text style={[styles.input, !data && styles.placeholderText]}>
-              {data ? formatarData(data) : "Selecione a data"}
-            </Text>
-          </TouchableOpacity>
-
-          {showDatePicker && (
-            <View style={styles.datePickerContainer}>
-              <DateTimePicker
-                value={data ?? new Date()}
-                mode="date"
-                display="default"
-                locale="pt-BR"
-                onChange={handleDateChange}
-              />
-              {Platform.OS === "ios" && (
-                <TouchableOpacity
-                  style={styles.datePickerDoneButton}
-                  onPress={() => setShowDatePicker(false)}
-                >
-                  <Text style={styles.datePickerDoneText}>Concluir</Text>
-                </TouchableOpacity>
-              )}
-            </View>
-          )}
+          <GiraDateField
+            value={data}
+            displayValue={data ? formatarData(data) : ""}
+            onChange={setData}
+          />
 
           <Text style={styles.label}>Horário (HH:MM)</Text>
           <View style={styles.inputWrapper}>
@@ -562,22 +518,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: Colors.textDark,
     paddingVertical: 12,
-  },
-  placeholderText: {
-    color: "#999",
-  },
-  datePickerContainer: {
-    marginTop: -12,
-    marginBottom: 20,
-  },
-  datePickerDoneButton: {
-    alignSelf: "flex-end",
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-  },
-  datePickerDoneText: {
-    color: Colors.primary,
-    fontWeight: "600",
   },
   textAreaInput: {
     minHeight: 92,

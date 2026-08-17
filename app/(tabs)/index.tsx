@@ -237,20 +237,24 @@ const styles = StyleSheet.create({
   infoRow: {
     flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
     marginBottom: 15,
   },
   infoTextContainer: {
     marginLeft: 15,
+    alignItems: "center",
   },
   infoLabel: {
     fontSize: 12,
     color: "#888",
     textTransform: "uppercase",
+    textAlign: "center",
   },
   infoValue: {
     fontSize: 16,
     fontWeight: "600",
     color: Colors.textDark,
+    textAlign: "center",
   },
   giraTitle: {
     fontSize: 24,
