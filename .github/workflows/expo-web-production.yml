@@ -1,0 +1,44 @@
+name: Publicar Web em producao
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+concurrency:
+  group: expo-web-production
+  cancel-in-progress: false
+
+jobs:
+  export-and-deploy:
+    name: Validar, exportar e publicar
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout do codigo
+        uses: actions/checkout@v5
+
+      - name: Configurar Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Configurar Expo e EAS
+        uses: expo/expo-github-action@v8
+        with:
+          eas-version: latest
+          token: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Verificar TypeScript
+        run: npm run typecheck
+
+      - name: Exportar aplicacao web
+        run: npx expo export --platform web
+
+      - name: Publicar web em producao
+        run: eas deploy --prod --non-interactive
